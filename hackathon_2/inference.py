@@ -1,5 +1,3 @@
-# inference.py
-
 import os
 from typing import List
 from hackathon_2 import Hackathon2Env, Hackathon2Action
@@ -33,14 +31,12 @@ class InteractiveScheduler:
         return slots
 
     def add_task(self, task_id, duration, preferred_start):
+        # Auto-select first available slot if conflict
         if self.is_conflict(preferred_start, preferred_start + duration):
-            print(f"⚠ Conflict detected for Task {task_id} at {preferred_start}-{preferred_start + duration}")
             slots = self.available_slots(duration)
             if not slots:
-                print("❌ No available slots. Task skipped.")
                 return None, -1, True
-            print(f"Available slots: {slots}")
-            chosen = int(input(f"Choose a start time from available slots for Task {task_id}: "))
+            chosen = slots[0]
         else:
             chosen = preferred_start
 
@@ -53,18 +49,24 @@ class InteractiveScheduler:
             "start": chosen,
             "end": end
         })
-        print(f"✅ Task {task_id} scheduled at {chosen}-{end}")
         return chosen, reward, False
 
 
 def main():
-    env = Hackathon2Env.from_docker_image("smart-schedule-env")
+    env = Hackathon2Env()  # use environment directly
     scheduler = InteractiveScheduler()
     rewards = []
 
     print(f"[START] task=smart-schedule env=hackathon_2 model={MODEL_NAME}")
 
-    obs = env.reset()
+    try:
+        obs = env.reset()
+    except Exception as e:
+        obs = None
+        done = True
+        print(f"[END] success=false steps=0 rewards=0.00 error={str(e)}")
+        return
+
     done = False
     step_num = 0
 
@@ -82,18 +84,26 @@ def main():
             start=start,
             end=start + task["duration"]
         )
-        result = env.step(action)
-        rewards.append(result.reward)
+
+        try:
+            result = env.step(action)
+            obs_step, r, done, info = result  # unpack tuple from env.step
+            rewards.append(r)
+        except Exception as e:
+            obs_step = None
+            r = 0
+            done = True
+            info = {"error": str(e)}
+            rewards.append(r)
+
         step_num += 1
         print(
             f"[STEP] step={step_num} action=schedule(task_id={task['task_id']}) "
-            f"reward={result.reward:.2f} done={result.done} error={result.error or 'null'}"
+            f"reward={r:.2f} done={str(done).lower()} error={info.get('error', 'null')}"
         )
-        done = result.done
 
     print(
-        f"[END] success={not done} steps={step_num} score={sum(rewards)/len(rewards):.2f} "
-        f"rewards={','.join(f'{r:.2f}' for r in rewards)}"
+        f"[END] success={str(not done).lower()} steps={step_num} rewards={','.join(f'{r:.2f}' for r in rewards)}"
     )
 
 
