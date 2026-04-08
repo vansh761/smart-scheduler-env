@@ -1,0 +1,252 @@
+from uuid import uuid4
+from typing import List
+
+from openenv.core.env_server.interfaces import Environment
+from openenv.core.env_server.types import State
+
+try:
+    from ..models import Hackathon2Action, Hackathon2Observation, Task
+except ImportError:
+    from models import Hackathon2Action, Hackathon2Observation, Task
+
+
+class Hackathon2Environment(Environment):
+
+    SUPPORTS_CONCURRENT_SESSIONS: bool = True
+
+    def __init__(self):
+        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self.tasks: List[Task] = []
+        self.schedule = []
+        self.current_time = 0
+        self.done = False
+
+    def reset(self) -> Hackathon2Observation:
+        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self.done = False
+
+        self.schedule = []
+        self.current_time = 0
+
+        self.tasks = [
+            Task(id=1, name="Study", priority=3),
+            Task(id=2, name="Workout", priority=1),
+            Task(id=3, name="Project", priority=2),
+            Task(id=4, name="Meeting", priority=1),
+        ]
+        
+        return Hackathon2Observation(
+            message="Environment reset. Schedule tasks.",
+            tasks=self.tasks,
+            conflicts=[]
+        )
+
+    def step(self, action):
+        reward = 0
+        done = False
+        info = {}
+        self._state.step_count += 1
+
+        if not self.tasks:
+            self.reset()
+        # AUTO MODE
+        if action.task_id == -1:
+            action = self.auto_schedule()
+            if action is None:
+                return Hackathon2Observation(
+                    message="No valid actions left.",
+                    tasks=self.tasks,
+                    conflicts=["No valid actions left."]
+                )
+
+        # FIND TASK
+        task = next((t for t in self.tasks if t.id == action.task_id), None)
+
+        if not task:
+            return Hackathon2Observation(
+                message="Invalid task",
+                tasks=self.tasks,
+                conflicts=["Invalid task"]
+            )
+
+        # PREVENT DUPLICATE
+        if any(s["task_id"] == action.task_id for s in self.schedule):
+            return Hackathon2Observation(
+                message="Task already completed",
+                tasks=self.tasks,
+                conflicts=["Task already completed"]
+            )
+
+        # SAFE DEFAULTS (avoid attribute errors)
+        duration = getattr(task, "duration", 1)
+        deadline = getattr(task, "deadline", 24)
+        energy = getattr(task, "energy", "medium")
+        depends_on = getattr(task, "depends_on", None)
+
+        # DEPENDENCY CHECK
+        if depends_on is not None:
+            dep_task = next((s for s in self.schedule if s["task_id"] == depends_on), None)
+
+            if not dep_task:
+                return self.state
+
+            if action.start_time < dep_task["end"]:
+                return self.state
+
+        start_time = getattr(action, "start_time", None)
+
+        if start_time is None:
+            start_time = getattr(action, "start", None)
+        end_time = start_time + duration
+
+        # OVERLAP CHECK
+        for s in self.schedule:
+            if not (end_time <= s["start"] or start_time >= s["end"]):
+                return Hackathon2Observation(
+                    message="Time overlap",
+                    tasks=self.tasks,
+                    conflicts=["Time overlap"]
+                )
+
+        # REWARD SYSTEM
+        if end_time <= deadline:
+            reward += 10
+        else:
+            reward -= min(10, end_time - deadline)
+
+        reward += task.priority * 5
+
+        if energy == "high" and 0 <= start_time <= 5:
+            reward += 5
+        elif energy == "medium" and 3 <= start_time <= 8:
+            reward += 3
+        elif energy == "low" and start_time >= 6:
+            reward += 2
+
+        gap = start_time - self.current_time
+        if gap > 0:
+            reward -= min(5, gap * 0.5)
+
+        reward += max(0, 5 - start_time * 0.5)
+
+        # ADD TO SCHEDULE
+        self.schedule.append({
+            "task_id": task.id,
+            "start": start_time,
+            "end": end_time,
+            "priority": task.priority
+        })
+
+        # UPDATE TIME
+        self.current_time = max(self.current_time, end_time)
+
+        # REMOVE TASK (FIXED)
+        self.tasks = [t for t in self.tasks if t.id != task.id]
+
+        # COMPLETION
+        if not self.tasks:
+            done = True
+
+        # STORE INTERNAL (OpenEnv doesn't use but we keep)
+        self.done = done
+
+        obs = Hackathon2Observation(
+            message="Action processed",
+            tasks=self.tasks,
+            conflicts=[]
+        )
+
+        obs.reward = reward
+        obs.done = done
+
+        return obs
+
+    def get_observation(self):
+        return Hackathon2Observation(
+            message="Current state",
+            tasks=self.tasks,
+            conflicts=[]
+        )
+
+    @property
+    def state(self):
+        return self._state
+
+    def get_state(self):
+        return self._state
+
+    def auto_schedule(self):
+        best_task = None
+        best_score = -999
+        best_start = 0
+
+        for task in self.tasks:
+            duration = getattr(task, "duration", 1)
+            deadline = getattr(task, "deadline", 24)
+            energy = getattr(task, "energy", "medium")
+            depends_on = getattr(task, "depends_on", None)
+
+            for start in range(0, 24):
+                end = start + duration
+
+                if end > 24:
+                    continue
+
+                if depends_on is not None:
+                    dep = next((s for s in self.schedule if s["task_id"] == depends_on), None)
+                    if not dep or start < dep["end"]:
+                        continue
+
+                overlap = False
+                for s in self.schedule:
+                    if not (end <= s["start"] or start >= s["end"]):
+                        overlap = True
+                        break
+
+                if overlap:
+                    continue
+
+                score = 0
+                score += task.priority * 10
+                score += max(0, 10 - (deadline - end))
+                score += max(0, 10 - start)
+
+                if energy == "high" and start <= 5:
+                    score += 5
+                elif energy == "low" and start >= 6:
+                    score += 3
+
+                if score > best_score:
+                    best_score = score
+                    best_task = task
+                    best_start = start
+
+        if best_task is None:
+            return None
+
+        class AutoAction:
+            def __init__(self, task_id, start_time):
+                self.task_id = task_id
+                self.start_time = start_time
+
+        return AutoAction(best_task.id, best_start)
+
+    def get_score(self):
+        total_time = sum([s["end"] - s["start"] for s in self.schedule])
+        idle_penalty = max(0, 24 - total_time)
+
+        return {
+            "tasks_completed": len(self.schedule),
+            "total_time_used": total_time,
+            "idle_time": idle_penalty,
+            "efficiency_score": max(0, 100 - idle_penalty * 2)
+        }
+
+    def get_schedule_visual(self):
+        timeline = ["." for _ in range(24)]
+
+        for task in self.schedule:
+            for t in range(task["start"], task["end"]):
+                timeline[t] = str(task["task_id"])
+
+        return "".join(timeline)
