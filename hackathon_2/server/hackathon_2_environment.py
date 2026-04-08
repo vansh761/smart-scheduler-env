@@ -22,26 +22,26 @@ class Hackathon2Environment(Environment):
         self.done = False
 
     def reset(self) -> Hackathon2Observation:
-    self._state = State(episode_id=str(uuid4()), step_count=0)
-    self.done = False
-    self.schedule = []
-    self.current_time = 0
-
-    # define tasks fully
-    self.tasks = [
-        Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
-        Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
-        Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
-        Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
-    ]
-
-    return Hackathon2Observation(
-        message="Environment reset. Schedule tasks.",
-        tasks=self.tasks,
-        conflicts=[],
-        done=False,        # Important for OpenEnv
-        reward=0.0         # Important for OpenEnv
-    )
+        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self.done = False
+        self.schedule = []
+        self.current_time = 0
+    
+        # define tasks fully
+        self.tasks = [
+            Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
+            Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
+            Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
+            Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
+        ]
+    
+        return Hackathon2Observation(
+            message="Environment reset. Schedule tasks.",
+            tasks=self.tasks,
+            conflicts=[],
+            done=False,        # Important for OpenEnv
+            reward=0.0         # Important for OpenEnv
+        )
 
     def step(self, action):
         reward = 0
