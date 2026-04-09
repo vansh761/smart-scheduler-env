@@ -69,12 +69,11 @@ def main():
     print(f"[START] task={task_name} env={benchmark} model={MODEL_NAME}")
 
     try:
-        env = Hackathon2Env()  # initialize environment
-        scheduler = InteractiveScheduler()
-
-        obs = env.reset()
-        done = False
-
+        with Hackathon2Env.from_env() as env:
+            scheduler = InteractiveScheduler()
+        
+            obs = env.reset()
+            done = False
         for task in TASKS:
             if done:
                 break
@@ -94,6 +93,7 @@ def main():
             # Step safely
             try:
                 result = env.step(action)
+                # Normalize tuple / object result
                 if isinstance(result, tuple):
                     obs_step, r, done, info = result
                 else:
