@@ -15,6 +15,7 @@ class Hackathon2Environment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
     def __init__(self):
+        # Lightweight init: no heavy computation
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.tasks: List[Task] = []
         self.schedule = []
@@ -22,25 +23,26 @@ class Hackathon2Environment(Environment):
         self.done = False
 
     def reset(self) -> Hackathon2Observation:
+        # Reset state quickly: HF Spaces can start fast
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.done = False
         self.schedule = []
         self.current_time = 0
-    
-        # define tasks fully
+
+        # Task definitions only
         self.tasks = [
             Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
             Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
             Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
             Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
         ]
-    
+
         return Hackathon2Observation(
             message="Environment reset. Schedule tasks.",
             tasks=self.tasks,
             conflicts=[],
-            done=False,        # Important for OpenEnv
-            reward=0.0         # Important for OpenEnv
+            done=False,
+            reward=0.0
         )
 
     def step(self, action):
@@ -51,6 +53,7 @@ class Hackathon2Environment(Environment):
 
         if not self.tasks:
             self.reset()
+
         # AUTO MODE
         if action.task_id == -1:
             action = self.auto_schedule()
@@ -63,7 +66,6 @@ class Hackathon2Environment(Environment):
 
         # FIND TASK
         task = next((t for t in self.tasks if t.id == action.task_id), None)
-
         if not task:
             return Hackathon2Observation(
                 message="Invalid task",
@@ -79,7 +81,7 @@ class Hackathon2Environment(Environment):
                 conflicts=["Task already completed"]
             )
 
-        # SAFE DEFAULTS (avoid attribute errors)
+        # SAFE DEFAULTS
         duration = getattr(task, "duration", 1)
         deadline = getattr(task, "deadline", 24)
         energy = getattr(task, "energy", "medium")
@@ -88,17 +90,10 @@ class Hackathon2Environment(Environment):
         # DEPENDENCY CHECK
         if depends_on is not None:
             dep_task = next((s for s in self.schedule if s["task_id"] == depends_on), None)
-
-            if not dep_task:
+            if not dep_task or action.start_time < dep_task["end"]:
                 return self.state
 
-            if action.start_time < dep_task["end"]:
-                return self.state
-
-        start_time = getattr(action, "start_time", None)
-
-        if start_time is None:
-            start_time = getattr(action, "start", None)
+        start_time = getattr(action, "start_time", getattr(action, "start", 0))
         end_time = start_time + duration
 
         # OVERLAP CHECK
@@ -111,25 +106,18 @@ class Hackathon2Environment(Environment):
                 )
 
         # REWARD SYSTEM
-        if end_time <= deadline:
-            reward += 10
-        else:
-            reward -= min(10, end_time - deadline)
-
+        reward += 10 if end_time <= deadline else -min(10, end_time - deadline)
         reward += task.priority * 5
-
         if energy == "high" and 0 <= start_time <= 5:
             reward += 5
         elif energy == "medium" and 3 <= start_time <= 8:
             reward += 3
         elif energy == "low" and start_time >= 6:
             reward += 2
-
+        reward += max(0, 5 - start_time * 0.5)
         gap = start_time - self.current_time
         if gap > 0:
             reward -= min(5, gap * 0.5)
-
-        reward += max(0, 5 - start_time * 0.5)
 
         # ADD TO SCHEDULE
         self.schedule.append({
@@ -139,25 +127,18 @@ class Hackathon2Environment(Environment):
             "priority": task.priority
         })
 
-        # UPDATE TIME
         self.current_time = max(self.current_time, end_time)
-
-        # REMOVE TASK (FIXED)
         self.tasks = [t for t in self.tasks if t.id != task.id]
 
-        # COMPLETION
         if not self.tasks:
             done = True
 
-        # STORE INTERNAL (OpenEnv doesn't use but we keep)
         self.done = done
-
         obs = Hackathon2Observation(
             message="Action processed",
             tasks=self.tasks,
             conflicts=[]
         )
-
         obs.reward = reward
         obs.done = done
 
@@ -190,7 +171,6 @@ class Hackathon2Environment(Environment):
 
             for start in range(0, 24):
                 end = start + duration
-
                 if end > 24:
                     continue
 
@@ -199,20 +179,11 @@ class Hackathon2Environment(Environment):
                     if not dep or start < dep["end"]:
                         continue
 
-                overlap = False
-                for s in self.schedule:
-                    if not (end <= s["start"] or start >= s["end"]):
-                        overlap = True
-                        break
-
+                overlap = any(not (end <= s["start"] or start >= s["end"]) for s in self.schedule)
                 if overlap:
                     continue
 
-                score = 0
-                score += task.priority * 10
-                score += max(0, 10 - (deadline - end))
-                score += max(0, 10 - start)
-
+                score = task.priority * 10 + max(0, 10 - (deadline - end)) + max(0, 10 - start)
                 if energy == "high" and start <= 5:
                     score += 5
                 elif energy == "low" and start >= 6:
@@ -246,9 +217,7 @@ class Hackathon2Environment(Environment):
 
     def get_schedule_visual(self):
         timeline = ["." for _ in range(24)]
-
         for task in self.schedule:
             for t in range(task["start"], task["end"]):
                 timeline[t] = str(task["task_id"])
-
         return "".join(timeline)
