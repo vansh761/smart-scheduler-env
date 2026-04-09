@@ -1,5 +1,7 @@
 from uuid import uuid4
 from typing import List
+import random  
+
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
@@ -29,6 +31,24 @@ class Hackathon2Environment(Environment):
         self.schedule = []
         self.current_time = 0
 
+
+        dynamic_tasks = [
+            Task(
+                id=5+i,
+                name=f"Task-{i}",
+                priority=random.randint(1,3),
+                start=None,
+                end=None,
+                duration=random.randint(1,3),
+                deadline=random.randint(5,15),
+                energy=random.choice(["low","medium","high"]),
+                depends_on=random.choice([None] + [t.id for t in self.tasks])
+            )
+            for i in range(3)  # add 3 dynamic tasks
+        ]
+
+        self.tasks.extend(dynamic_tasks)
+        
         # Task definitions only
         self.tasks = [
             Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
@@ -54,6 +74,12 @@ class Hackathon2Environment(Environment):
         if not self.tasks:
             self.reset()
 
+        if depends_on is not None and end_time <= dep_task["end"]:
+            reward -= 5  # penalty for violating dependency
+        
+        if energy == "high" and start_time > 8:
+            reward -= 3  # penalty for high-energy tasks done late
+    
         # AUTO MODE
         if action.task_id == -1:
             action = self.auto_schedule()
@@ -163,6 +189,20 @@ class Hackathon2Environment(Environment):
         best_score = -999
         best_start = 0
 
+        if random.random() < 0.1:  # 10% chance
+            urgent_task = Task(
+                id=100,
+                name="Urgent",
+                priority=5,
+                start=None,
+                end=None,
+                duration=1,
+                deadline=self.current_time+2,
+                energy="high",
+                depends_on=None
+            )
+            self.tasks.append(urgent_task)
+            
         for task in self.tasks:
             duration = getattr(task, "duration", 1)
             deadline = getattr(task, "deadline", 24)
@@ -206,13 +246,14 @@ class Hackathon2Environment(Environment):
 
     def get_score(self):
         total_time = sum([s["end"] - s["start"] for s in self.schedule])
-        idle_penalty = max(0, 24 - total_time)
-
+        score = sum([s["priority"]*10 for s in self.schedule])
+        idle_penalty = max(0, 24 - sum([s["end"]-s["start"] for s in self.schedule]))
+        efficiency_score = max(0, score - idle_penalty*2)
         return {
             "tasks_completed": len(self.schedule),
-            "total_time_used": total_time,
+            "total_time_used": sum([s["end"]-s["start"] for s in self.schedule]),
             "idle_time": idle_penalty,
-            "efficiency_score": max(0, 100 - idle_penalty * 2)
+            "efficiency_score": efficiency_score
         }
 
     def get_schedule_visual(self):
