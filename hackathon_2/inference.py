@@ -43,7 +43,7 @@ class InteractiveScheduler:
             slots = self.available_slots(duration)
             if not slots:
                 return None, -1, True
-            chosen = slots[0]  # auto pick first available
+            chosen = slots[0]
         else:
             chosen = preferred_start
 
@@ -53,11 +53,14 @@ class InteractiveScheduler:
         return chosen, reward, False
 
 def run_inference(prompt: str) -> str:
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception:
+        return "error"
 
 def main():
     task_name = "smart-schedule"
@@ -69,17 +72,23 @@ def main():
     print(f"[START] task={task_name} env={benchmark} model={MODEL_NAME}")
 
     try:
-        with Hackathon2Env.from_env() as env:
-            scheduler = InteractiveScheduler()
-        
-            obs = env.reset()
-            done = False
+        # ✅ FIX: Proper connection to running environment
+        env = Hackathon2Env(base_url="http://localhost:7860")
+
+        scheduler = InteractiveScheduler()
+
+        obs = env.reset()
+        done = False
+
         for task in TASKS:
             if done:
                 break
 
             preferred_start = 0
-            start, reward, skipped = scheduler.add_task(task["task_id"], task["duration"], preferred_start)
+            start, reward, skipped = scheduler.add_task(
+                task["task_id"], task["duration"], preferred_start
+            )
+
             if skipped:
                 continue
 
@@ -90,10 +99,9 @@ def main():
                 end=start + task["duration"]
             )
 
-            # Step safely
             try:
                 result = env.step(action)
-                # Normalize tuple / object result
+
                 if isinstance(result, tuple):
                     obs_step, r, done, info = result
                 else:
@@ -107,7 +115,7 @@ def main():
 
                 print(
                     f"[STEP] step={steps} action=schedule(task_id={task['task_id']}) "
-                    f"reward={r:.2f} done={str(done).lower()} error={info if info is not None else 'null'}"
+                    f"reward={r:.2f} done={str(done).lower()} error={info if info else 'null'}"
                 )
 
             except Exception as e_step:
