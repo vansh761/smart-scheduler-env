@@ -80,7 +80,43 @@ class Hackathon2Environment(Environment):
         if not self.tasks:
             self.reset()
     
+        action_type = getattr(action, "action_type", "schedule")
+    
+        # -------------------------
+        # DELETE TASK
+        # -------------------------
+        if action_type == "delete":
+            self.schedule = [s for s in self.schedule if s["task_id"] != action.task_id]
+    
+            return Hackathon2Observation(
+                message="Task deleted",
+                tasks=self.tasks,
+                conflicts=[],
+                scheduled=self.schedule
+            )
+    
+        # -------------------------
+        # MOVE / REPLACE TASK
+        # -------------------------
+        if action_type == "move":
+            existing = next((s for s in self.schedule if s["task_id"] == action.task_id), None)
+    
+            if existing:
+                start_time = getattr(action, "start_time", existing["start"])
+                existing["start"] = start_time
+                existing["priority"] = getattr(action, "priority", existing["priority"])
+                existing["name"] = getattr(action, "name", existing.get("name", "Task"))
+    
+                return Hackathon2Observation(
+                    message="Task moved successfully",
+                    tasks=self.tasks,
+                    conflicts=[],
+                    scheduled=self.schedule
+                )
+    
+        # -------------------------
         # AUTO MODE
+        # -------------------------
         if getattr(action, "task_id", None) == -1:
             action = self.auto_schedule()
             if action is None:
@@ -90,7 +126,9 @@ class Hackathon2Environment(Environment):
                     conflicts=["No valid actions left."]
                 )
     
+        # -------------------------
         # FIND TASK
+        # -------------------------
         task = next((t for t in self.tasks if t.id == action.task_id), None)
         if not task:
             return Hackathon2Observation(
@@ -99,7 +137,9 @@ class Hackathon2Environment(Environment):
                 conflicts=["Invalid task"]
             )
     
+        # -------------------------
         # PREVENT DUPLICATE
+        # -------------------------
         if any(s["task_id"] == action.task_id for s in self.schedule):
             return Hackathon2Observation(
                 message="Task already completed",
@@ -107,53 +147,72 @@ class Hackathon2Environment(Environment):
                 conflicts=["Task already completed"]
             )
     
+        # -------------------------
         # SAFE DEFAULTS
+        # -------------------------
         duration = getattr(task, "duration", 1)
         deadline = getattr(task, "deadline", 24)
         energy = getattr(task, "energy", "medium")
         depends_on = getattr(task, "depends_on", None)
+    
         start_time = getattr(action, "start_time", getattr(action, "start", 0))
         end_time = start_time + duration
     
+        # ✅ FIX: Use user-provided values
+        priority = getattr(action, "priority", task.priority)
+        name = getattr(action, "name", task.name)
+    
+        # -------------------------
         # DEPENDENCY CHECK
+        # -------------------------
         if depends_on is not None:
             dep_task = next((s for s in self.schedule if s["task_id"] == depends_on), None)
-            if not dep_task or start_time < dep_task["end"]:
+            if not dep_task:
                 return Hackathon2Observation(
                     message="Dependency not met",
                     tasks=self.tasks,
                     conflicts=[f"Task {task.id} depends on task {depends_on}"]
                 )
     
+        # -------------------------
         # OVERLAP CHECK
+        # -------------------------
         for s in self.schedule:
-            if not (end_time <= s["start"] or start_time >= s["end"]):
+            s_end = s["start"] + duration  # simulate end since removed
+            if not (end_time <= s["start"] or start_time >= s_end):
                 return Hackathon2Observation(
                     message="Time overlap",
                     tasks=self.tasks,
                     conflicts=["Time overlap"]
                 )
     
+        # -------------------------
         # REWARD SYSTEM
+        # -------------------------
         reward += 10 if end_time <= deadline else -min(10, end_time - deadline)
-        reward += task.priority * 5
+        reward += priority * 5
+    
         if energy == "high" and 0 <= start_time <= 5:
             reward += 5
         elif energy == "medium" and 3 <= start_time <= 8:
             reward += 3
         elif energy == "low" and start_time >= 6:
             reward += 2
+    
         reward += max(0, 5 - start_time * 0.5)
+    
         gap = start_time - self.current_time
         if gap > 0:
             reward -= min(5, gap * 0.5)
     
-        # ADD TO SCHEDULE
+        # -------------------------
+        # ADD TO SCHEDULE (FIXED)
+        # -------------------------
         self.schedule.append({
             "task_id": task.id,
+            "name": name,
             "start": start_time,
-            "end": end_time,
-            "priority": task.priority
+            "priority": priority
         })
     
         self.current_time = max(self.current_time, end_time)
@@ -163,18 +222,17 @@ class Hackathon2Environment(Environment):
             done = True
     
         self.done = done
+    
+        # -------------------------
+        # FINAL OBS
+        # -------------------------
         obs = Hackathon2Observation(
             message="Action processed",
             tasks=self.tasks,
             conflicts=[],
             reward=reward,
             done=done,
-            scheduled=[{
-                "task_id": s["task_id"],
-                "start": s["start"],
-                "end": s["end"],
-                "priority": s["priority"]
-            } for s in self.schedule]
+            scheduled=self.schedule
         )
     
         return obs
