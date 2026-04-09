@@ -62,10 +62,16 @@ class Hackathon2Environment(Environment):
             tasks=self.tasks,
             conflicts=[],
             done=False,
-            reward=0.0
+            reward=0.0,
+            scheduled=[{
+                "task_id": s["task_id"],
+                "start": s["start"],
+                "end": s["end"],
+                "priority": s["priority"]
+            } for s in self.schedule]
         )
 
-   def step(self, action):
+    def step(self, action):
         reward = 0
         done = False
         info = {}
@@ -160,10 +166,16 @@ class Hackathon2Environment(Environment):
         obs = Hackathon2Observation(
             message="Action processed",
             tasks=self.tasks,
-            conflicts=[]
+            conflicts=[],
+            reward=reward,
+            done=done,
+            scheduled=[{
+                "task_id": s["task_id"],
+                "start": s["start"],
+                "end": s["end"],
+                "priority": s["priority"]
+            } for s in self.schedule]
         )
-        obs.reward = reward
-        obs.done = done
     
         return obs
 
@@ -171,7 +183,13 @@ class Hackathon2Environment(Environment):
         return Hackathon2Observation(
             message="Current state",
             tasks=self.tasks,
-            conflicts=[]
+            conflicts=[],
+            scheduled=[{
+                "task_id": s["task_id"],
+                "start": s["start"],
+                "end": s["end"],
+                "priority": s["priority"]
+            } for s in self.schedule]
         )
 
     @property
