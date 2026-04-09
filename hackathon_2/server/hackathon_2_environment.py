@@ -65,23 +65,17 @@ class Hackathon2Environment(Environment):
             reward=0.0
         )
 
-    def step(self, action):
+   def step(self, action):
         reward = 0
         done = False
         info = {}
         self._state.step_count += 1
-
+    
         if not self.tasks:
             self.reset()
-
-        if depends_on is not None and end_time <= dep_task["end"]:
-            reward -= 5  # penalty for violating dependency
-        
-        if energy == "high" and start_time > 8:
-            reward -= 3  # penalty for high-energy tasks done late
     
         # AUTO MODE
-        if action.task_id == -1:
+        if getattr(action, "task_id", None) == -1:
             action = self.auto_schedule()
             if action is None:
                 return Hackathon2Observation(
@@ -89,7 +83,7 @@ class Hackathon2Environment(Environment):
                     tasks=self.tasks,
                     conflicts=["No valid actions left."]
                 )
-
+    
         # FIND TASK
         task = next((t for t in self.tasks if t.id == action.task_id), None)
         if not task:
@@ -98,7 +92,7 @@ class Hackathon2Environment(Environment):
                 tasks=self.tasks,
                 conflicts=["Invalid task"]
             )
-
+    
         # PREVENT DUPLICATE
         if any(s["task_id"] == action.task_id for s in self.schedule):
             return Hackathon2Observation(
@@ -106,22 +100,25 @@ class Hackathon2Environment(Environment):
                 tasks=self.tasks,
                 conflicts=["Task already completed"]
             )
-
+    
         # SAFE DEFAULTS
         duration = getattr(task, "duration", 1)
         deadline = getattr(task, "deadline", 24)
         energy = getattr(task, "energy", "medium")
         depends_on = getattr(task, "depends_on", None)
-
+        start_time = getattr(action, "start_time", getattr(action, "start", 0))
+        end_time = start_time + duration
+    
         # DEPENDENCY CHECK
         if depends_on is not None:
             dep_task = next((s for s in self.schedule if s["task_id"] == depends_on), None)
-            if not dep_task or action.start_time < dep_task["end"]:
-                return self.state
-
-        start_time = getattr(action, "start_time", getattr(action, "start", 0))
-        end_time = start_time + duration
-
+            if not dep_task or start_time < dep_task["end"]:
+                return Hackathon2Observation(
+                    message="Dependency not met",
+                    tasks=self.tasks,
+                    conflicts=[f"Task {task.id} depends on task {depends_on}"]
+                )
+    
         # OVERLAP CHECK
         for s in self.schedule:
             if not (end_time <= s["start"] or start_time >= s["end"]):
@@ -130,7 +127,7 @@ class Hackathon2Environment(Environment):
                     tasks=self.tasks,
                     conflicts=["Time overlap"]
                 )
-
+    
         # REWARD SYSTEM
         reward += 10 if end_time <= deadline else -min(10, end_time - deadline)
         reward += task.priority * 5
@@ -144,7 +141,7 @@ class Hackathon2Environment(Environment):
         gap = start_time - self.current_time
         if gap > 0:
             reward -= min(5, gap * 0.5)
-
+    
         # ADD TO SCHEDULE
         self.schedule.append({
             "task_id": task.id,
@@ -152,13 +149,13 @@ class Hackathon2Environment(Environment):
             "end": end_time,
             "priority": task.priority
         })
-
+    
         self.current_time = max(self.current_time, end_time)
         self.tasks = [t for t in self.tasks if t.id != task.id]
-
+    
         if not self.tasks:
             done = True
-
+    
         self.done = done
         obs = Hackathon2Observation(
             message="Action processed",
@@ -167,7 +164,7 @@ class Hackathon2Environment(Environment):
         )
         obs.reward = reward
         obs.done = done
-
+    
         return obs
 
     def get_observation(self):
