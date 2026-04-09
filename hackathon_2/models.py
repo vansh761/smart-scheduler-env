@@ -32,3 +32,8 @@ class Hackathon2Observation(Observation):
     message: str = Field(default="", description="Environment message")
     tasks: List[Task] = Field(default_factory=list, description="List of tasks")
     conflicts: List[str] = Field(default_factory=list, description="Conflicts detected")
+
+
+class Hackathon2Action(BaseModel):
+    task_id: int
+    start_time: Optional[int] = None   
