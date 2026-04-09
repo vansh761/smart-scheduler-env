@@ -76,12 +76,52 @@ class Hackathon2Environment(Environment):
         done = False
         info = {}
         self._state.step_count += 1
-    
+        action_type = getattr(action, "action_type", "schedule")
+
+        
         if not self.tasks:
             self.reset()
     
         action_type = getattr(action, "action_type", "schedule")
-    
+
+        if action_type == "auto":
+            action = self.auto_schedule()
+
+        if action_type == "delete":
+            self.schedule = [s for s in self.schedule if s["task_id"] != action.task_id]
+        
+            return Hackathon2Observation(
+                message=f"Task {action.task_id} deleted",
+                tasks=self.tasks,
+                conflicts=[],
+                scheduled=self.schedule
+            )
+
+        if action_type == "move":
+            for s in self.schedule:
+                if s["task_id"] == action.task_id:
+                    duration = s["end"] - s["start"]
+                    new_start = action.start
+                    new_end = new_start + duration
+        
+                    # remove old
+                    self.schedule.remove(s)
+        
+                    # add new
+                    self.schedule.append({
+                        "task_id": s["task_id"],
+                        "start": new_start,
+                        "end": new_end,
+                        "priority": s["priority"]
+                    })
+        
+                    return Hackathon2Observation(
+                        message=f"Task {action.task_id} moved",
+                        tasks=self.tasks,
+                        conflicts=[],
+                        scheduled=self.schedule
+                    )
+            
         # -------------------------
         # DELETE TASK
         # -------------------------
