@@ -3,7 +3,7 @@ import traceback
 from openai import OpenAI
 from hackathon_2 import Hackathon2Env, Hackathon2Action
 
-# ✅ FIX: Use validator-provided environment variables (NO fallback)
+# ✅ Use validator-provided API
 MODEL_NAME = "gpt-4.1-mini"
 
 client = OpenAI(
@@ -79,11 +79,32 @@ def main():
             if done:
                 break
 
-            # ✅ FIX: FORCE LLM CALL (MANDATORY FOR VALIDATOR)
-            prompt = f"Schedule task {task['task_id']} with duration {task['duration']} and priority {task['priority']}"
+            # ✅ LLM decides best start time
+            prompt = f"""
+You are a smart scheduling AI.
+
+Task:
+- task_id: {task['task_id']}
+- duration: {task['duration']}
+- priority: {task['priority']}
+
+Already scheduled tasks:
+{scheduler.schedule}
+
+Return ONLY a single integer start time (0-23).
+No explanation.
+"""
             llm_output = run_inference(prompt)
 
-            preferred_start = 0
+            # ✅ Safe extraction of number
+            try:
+                preferred_start = int(''.join(filter(str.isdigit, llm_output)))
+                if preferred_start < 0 or preferred_start > 23:
+                    preferred_start = 0
+            except:
+                preferred_start = 0
+
+            # ✅ Your original logic (unchanged)
             start, reward, skipped = scheduler.add_task(
                 task["task_id"], task["duration"], preferred_start
             )
