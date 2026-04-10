@@ -48,6 +48,8 @@ class InteractiveScheduler:
         self.schedule.append({"task_id": task_id, "start": chosen, "end": end})
         return chosen, reward, False
 
+
+# ✅ FIX: Correct indentation (outside class)
 def run_inference(prompt: str) -> str:
     try:
         response = client.chat.completions.create(
@@ -58,6 +60,8 @@ def run_inference(prompt: str) -> str:
     except Exception:
         return "error"
 
+
+# ✅ FIX: Correct indentation
 def main():
     task_name = "smart-schedule"
     benchmark = "hackathon_2"
@@ -96,7 +100,7 @@ No explanation.
 """
             llm_output = run_inference(prompt)
 
-            # ✅ Safe extraction of number
+            # ✅ Safe extraction
             try:
                 preferred_start = int(''.join(filter(str.isdigit, llm_output)))
                 if preferred_start < 0 or preferred_start > 23:
@@ -104,7 +108,6 @@ No explanation.
             except:
                 preferred_start = 0
 
-            # ✅ Your original logic (unchanged)
             start, reward, skipped = scheduler.add_task(
                 task["task_id"], task["duration"], preferred_start
             )
@@ -161,6 +164,7 @@ No explanation.
             f"[END] success={str(success).lower()} steps={steps} "
             f"rewards={','.join(f'{r:.2f}' for r in rewards)}"
         )
+
 
 if __name__ == "__main__":
     main()
