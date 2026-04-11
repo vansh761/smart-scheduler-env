@@ -20,17 +20,17 @@ class Hackathon2Environment(Environment):
             {
                 "id": 1,
                 "name": "easy",
-                "grader": "reward"
+                "grader": {"type": "reward"}
             },
             {
                 "id": 2,
                 "name": "medium",
-                "grader": "reward"
+                "grader": {"type": "reward"}
             },
             {
                 "id": 3,
                 "name": "hard",
-                "grader": "reward"
+                "grader": {"type": "reward"}
             }
         ]
     
