@@ -11,11 +11,8 @@ class Task(BaseModel):
     deadline: int = 10
     energy: str = "medium"
 
-    # ✅ REQUIRED BY VALIDATOR
-    score: float = 0.5
-
-    # 🔥 IMPORTANT: marks task as graded explicitly
-    is_graded: bool = True
+    # IMPORTANT: validator-required field
+    score: float
 
 # -------- ACTION MODEL -------- #
 class Hackathon2Action(Action):
