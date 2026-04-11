@@ -1,6 +1,6 @@
 from openenv.core.env_server.types import Action, Observation
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 
 # -------- TASK MODEL -------- #from openenv.core.env_server.types import Action, Observation
 from pydantic import BaseModel, Field
