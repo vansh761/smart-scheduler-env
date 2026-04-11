@@ -1,3 +1,4 @@
+from models import Task
 def count_conflicts(tasks):
     conflicts = 0
     for i in range(len(tasks)):
