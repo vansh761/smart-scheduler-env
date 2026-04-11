@@ -11,42 +11,22 @@ class Task(BaseModel):
     deadline: int = 10
     energy: str = "medium"
 
-    # IMPORTANT: validator-required field
-    score: float
+    # MUST be strictly (0,1)
+    score: float = Field(..., gt=0.0, lt=1.0)
 
 # -------- ACTION MODEL -------- #
 class Hackathon2Action(Action):
     task_id: int = Field(..., description="Task ID to act on", example=4)
-    name: Optional[str] = Field(None, description="Task name", example="Meeting")
-    start_time: Optional[int] = Field(None, description="Start time for the task", example=9)
-    priority: Optional[int] = Field(None, description="Task priority", example=1)
-    energy: Optional[str] = Field("medium", description="Energy level required", example="medium")
-    
-    action_type: Literal["schedule", "move", "delete", "auto"] = Field(...,
-        description="Choose action type: schedule / move / delete / auto"
-    )
-    
-    
+    name: Optional[str] = Field(None)
+    start_time: Optional[int] = Field(None)
+    priority: Optional[int] = Field(None)
+    energy: Optional[str] = Field("medium")
+
+    action_type: Literal["schedule", "move", "delete", "auto"]
+
 # -------- OBSERVATION MODEL -------- #
 class Hackathon2Observation(Observation):
-    message: str = Field(default="", description="Environment message", example="Environment reset. Schedule tasks.")
-    tasks: List[Task] = Field(default_factory=list, description="List of tasks", example=[
-        {
-            "id": 1,
-            "name": "Study",
-            "priority": 3,
-            "start": None,
-            "energy": "high"
-        },
-        {
-            "id": 2,
-            "name": "Workout",
-            "priority": 1,
-            "start": None,
-            "energy": "medium"
-        }
-    ])
-    conflicts: List[str] = Field(default_factory=list, description="Conflicts detected", example=[])
-    scheduled: Optional[List[dict]] = Field(default_factory=list, description="Scheduled tasks with start", example=[
-        {"task_id": 1, "start": 8, "priority": 3, "name": "Study"}
-    ])
+    message: str = ""
+    tasks: List[Task] = []
+    conflicts: List[str] = []
+    scheduled: Optional[List[dict]] = []
