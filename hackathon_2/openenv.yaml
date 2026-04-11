@@ -9,18 +9,35 @@ runtime: fastapi
 app: server.app:app
 port: 8000
 
+spec_version: 1
+
+name: smart_schedule_env
+description: AI environment for real-world task scheduling, conflict resolution, and optimization
+
+type: space
+runtime: fastapi
+
+app: server.app:app
+port: 8000
+
 tasks:
   - name: easy
     description: Sort tasks by priority
     grader:
       type: reward
+      min_score: 0.01
+      max_score: 0.99
 
   - name: medium
     description: Resolve scheduling conflicts
     grader:
       type: reward
+      min_score: 0.01
+      max_score: 0.99
 
   - name: hard
     description: Optimize full schedule with constraints
     grader:
       type: reward
+      min_score: 0.01
+      max_score: 0.99
