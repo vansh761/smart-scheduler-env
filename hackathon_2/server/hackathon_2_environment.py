@@ -17,9 +17,33 @@ class Hackathon2Environment(Environment):
 
     def get_tasks(self):
         return [
-            {"id": 1, "name": "easy"},
-            {"id": 2, "name": "medium"},
-            {"id": 3, "name": "hard"}
+            {
+                "id": "easy",
+                "name": "easy",
+                "grader": {
+                    "type": "numeric",
+                    "min": 0.01,
+                    "max": 0.99
+                }
+            },
+            {
+                "id": "medium",
+                "name": "medium",
+                "grader": {
+                    "type": "numeric",
+                    "min": 0.01,
+                    "max": 0.99
+                }
+            },
+            {
+                "id": "hard",
+                "name": "hard",
+                "grader": {
+                    "type": "numeric",
+                    "min": 0.01,
+                    "max": 0.99
+                }
+            }
         ]
 
     def get_task_scores(self):
@@ -140,6 +164,7 @@ class Hackathon2Environment(Environment):
             reward = 0.85
     
         # ✅ FINAL SAFETY CLAMP
+        reward = float(reward)
         reward = max(0.01, min(0.99, reward))
     
         self.done = done
