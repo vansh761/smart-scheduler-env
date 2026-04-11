@@ -16,8 +16,7 @@ class Hackathon2Environment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
     def _format_step(self, obs, reward, done):
-        score = reward / 50
-        score = max(0.01, min(0.99, score))
+        score = max(0.01, min(0.99, float(reward)))
 
         obs.reward = score
         obs.done = done
@@ -81,8 +80,8 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
-            return self._format_step(obs, 10, False)
-
+            return self._format_step(obs, 0.5, False)
+            
         if action_type == "move":
             for s in self.schedule:
                 if s["task_id"] == action.task_id:
@@ -107,7 +106,7 @@ class Hackathon2Environment(Environment):
                         done=False,
                         scheduled=self.schedule
                     )
-                    return self._format_step(obs, 10, False)
+                    return self._format_step(obs, 0.5, False)
 
         task = next((t for t in self.tasks if t.id == action.task_id), None)
 
@@ -120,7 +119,7 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
-            return self._format_step(obs, 10, False)
+            return self._format_step(obs, 0.5, False)
 
         if any(s["task_id"] == action.task_id for s in self.schedule):
             obs = Hackathon2Observation(
@@ -131,8 +130,8 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
-            return self._format_step(obs, 10, False)
-
+            return self._format_step(obs, 0.5, False)
+            
         start_time = getattr(action, "start_time", 0)
         end_time = start_time + 1  # simple duration
 
@@ -147,10 +146,12 @@ class Hackathon2Environment(Environment):
                     done=False,
                     scheduled=self.schedule
                 )
-                return self._format_step(obs, 10, False)
-
-        reward += 10 + task.priority * 5
-
+                return self._format_step(obs, 0.5, False)
+                
+        base_score = 0.2 + (task.priority * 0.2)   # priority affects score
+        time_bonus = max(0, (10 - start_time)) * 0.02
+        
+        reward = base_score + time_bonus
         self.schedule.append({
             "task_id": task.id,
             "name": task.name,
@@ -175,7 +176,9 @@ class Hackathon2Environment(Environment):
             scheduled=self.schedule
         )
 
-        return self._format_step(obs, reward, done)
+        normalized_reward = max(0.05, min(0.95, reward))
+
+        return self._format_step(obs, normalized_reward, done)
 
     def get_observation(self):
         return Hackathon2Observation(
