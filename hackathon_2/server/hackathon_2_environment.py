@@ -34,47 +34,41 @@ class Hackathon2Environment(Environment):
         self.done = False
 
     def reset(self) -> Hackathon2Observation:
-        self._state = State(episode_id=str(uuid4()), step_count=0)
-        self.done = False
-        self.schedule = []
-        self.current_time = 0
+    self._state = State(episode_id=str(uuid4()), step_count=0)
+    self.done = False
+    self.schedule = []
+    self.current_time = 0
 
-        dynamic_tasks = [
-            Task(
-                id=5+i,
-                name=f"Task-{i}",
-                priority=random.randint(1,3),
-                start=None,
-                end=None,
-                duration=random.randint(1,3),
-                deadline=random.randint(5,15),
-                energy=random.choice(["low","medium","high"]),
-                depends_on=random.choice([None])
-            )
-            for i in range(3)
-        ]
-
-        self.tasks = dynamic_tasks + [
-            Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
-            Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
-            Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
-            Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
-        ]
-
-        obs = Hackathon2Observation(
-            message="Environment reset. Schedule tasks.",
-            tasks=self.tasks,
-            conflicts=[],
-            done=False,
-            reward=0.5,  # FIXED
-            scheduled=[{
-                "task_id": s["task_id"],
-                "start": s["start"],
-                "end": s.get("end", s["start"] + 1),
-                "priority": s["priority"]
-            } for s in self.schedule]
+    dynamic_tasks = [
+        Task(
+            id=5+i,
+            name=f"Task-{i}",
+            priority=random.randint(1,3),
+            start=None,
+            end=None,
+            duration=random.randint(1,3),
+            deadline=random.randint(5,15),
+            energy=random.choice(["low","medium","high"]),
+            depends_on=None
         )
-        return self._format_step(obs,10,False)
+        for i in range(3)
+    ]
+
+    self.tasks = dynamic_tasks + [
+        Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
+        Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
+        Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
+        Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
+    ]
+
+    return Hackathon2Observation(
+        message="Environment reset. Schedule tasks.",
+        tasks=self.tasks,
+        conflicts=[],
+        done=False,
+        reward=0.5,
+        scheduled=[]   
+    )
 
     def step(self, action):
         reward = 0
