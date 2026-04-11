@@ -14,22 +14,25 @@ tasks:
     name: easy
     description: Sort tasks by priority
     grader:
-      type: reward
-      min_score: 0.01
-      max_score: 0.99
+      type: python
+      entrypoint: grader.grade_easy
+      min_score: 0.02
+      max_score: 0.98
 
   - id: medium
     name: medium
     description: Resolve scheduling conflicts
     grader:
-      type: reward
-      min_score: 0.01
-      max_score: 0.99
+      type: python
+      entrypoint: grader.grade_medium
+      min_score: 0.02
+      max_score: 0.98
 
   - id: hard
     name: hard
     description: Optimize full schedule with constraints
     grader:
-      type: reward
-      min_score: 0.01
-      max_score: 0.99
+      type: python
+      entrypoint: grader.grade_hard
+      min_score: 0.02
+      max_score: 0.98
