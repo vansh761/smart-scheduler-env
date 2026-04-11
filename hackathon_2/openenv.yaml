@@ -12,9 +12,15 @@ port: 8000
 tasks:
   - name: easy
     description: Sort tasks by priority
+    grader:
+      type: reward
 
   - name: medium
     description: Resolve scheduling conflicts
+    grader:
+      type: reward
 
   - name: hard
     description: Optimize full schedule with constraints
+    grader:
+      type: reward
