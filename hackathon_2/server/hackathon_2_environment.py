@@ -60,7 +60,7 @@ class Hackathon2Environment(Environment):
         obs.reward = score
         obs.done = done
 
-        return obs, score, done, {"score": score}
+        return obs
 
     # -----------------------------
     def __init__(self):
