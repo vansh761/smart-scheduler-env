@@ -10,7 +10,6 @@ def count_conflicts(tasks):
 
 
 def safe_score(score: float) -> float:
-    """Clamp score strictly between 0.02 and 0.98 to avoid edge rejection."""
     return max(0.02, min(0.98, score))
 
 def grade_easy(tasks):
@@ -27,6 +26,5 @@ def grade_hard(tasks):
     conflicts = count_conflicts(tasks)
     scheduled = [t for t in tasks if t.start is not None]
     completeness = len(scheduled) / len(tasks) if tasks else 0.0
-
     raw = (1 - conflicts * 0.3) + completeness * 0.5
     return safe_score(raw)
