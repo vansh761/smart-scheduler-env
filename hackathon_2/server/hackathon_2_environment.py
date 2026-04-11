@@ -15,25 +15,35 @@ class Hackathon2Environment(Environment):
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
+    def get_tasks(self):
+        return [
+            {
+                "id": 1,
+                "name": "easy",
+                "grader": "reward"
+            },
+            {
+                "id": 2,
+                "name": "medium",
+                "grader": "reward"
+            },
+            {
+                "id": 3,
+                "name": "hard",
+                "grader": "reward"
+            }
+        ]
+    
     def _format_step(self, obs, reward, done):
-        # ✅ ALWAYS produce valid score
         score = float(reward)
     
-        # STRICT (0,1)
-        if score <= 0:
-            score = 0.1
-        elif score >= 1:
-            score = 0.9
+        # STRICT validator-safe clamp
+        score = max(0.01, min(0.99, score))
     
-        # ✅ IMPORTANT: both obs.reward AND info["score"]
         obs.reward = score
         obs.done = done
     
-        info = {
-            "score": score   # 🔥 THIS is what validator reads
-        }
-    
-        return obs, score, done, info
+        return obs, score, done, {"score": score}
        
 
     def __init__(self):
