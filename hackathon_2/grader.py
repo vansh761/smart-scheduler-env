@@ -10,21 +10,18 @@ def count_conflicts(tasks):
 
 
 def safe_score(score: float) -> float:
-    """Clamp score strictly between 0.01 and 0.99."""
-    return max(0.01, min(0.99, score))
-
+    """Clamp score strictly between 0.02 and 0.98 to avoid edge rejection."""
+    return max(0.02, min(0.98, score))
 
 def grade_easy(tasks):
     priorities = [t.priority for t in tasks]
-    raw = 0.99 if priorities == sorted(priorities) else 0.01
+    raw = 0.98 if priorities == sorted(priorities) else 0.02
     return safe_score(raw)
-
 
 def grade_medium(tasks):
     conflicts = count_conflicts(tasks)
     raw = 1.0 - 0.5 * conflicts
     return safe_score(raw)
-
 
 def grade_hard(tasks):
     conflicts = count_conflicts(tasks)
