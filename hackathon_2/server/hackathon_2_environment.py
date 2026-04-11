@@ -66,7 +66,8 @@ class Hackathon2Environment(Environment):
                 Task(id=2, name="Workout", priority=1, duration=1, deadline=8, energy="medium"),
                 Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low"),
             ]
-
+        ]
+        
         return Hackathon2Observation(
             message="Environment reset. Schedule tasks.",
             tasks=self.tasks,
