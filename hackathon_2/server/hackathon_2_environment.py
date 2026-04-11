@@ -59,19 +59,18 @@ class Hackathon2Environment(Environment):
     # -----------------------------
     def step(self, action):
         self._state.step_count += 1
-
         step_num = self._state.step_count
         done = step_num >= 3
-
+    
         action_type = getattr(action, "action_type", "schedule")
-
+        
         if action_type == "auto":
             action = self.auto_schedule()
-
+    
         task = next((t for t in self.tasks if t.id == getattr(action, "task_id", None)), None)
         if not task and self.tasks:
             task = self.tasks[0]
-
+    
         if not task:
             obs = Hackathon2Observation(
                 message="No tasks left",
@@ -82,40 +81,45 @@ class Hackathon2Environment(Environment):
                 scheduled=self.schedule
             )
             return self._format_step(obs, 0.5, True)
-
+    
+        # 🔥 FIX: Actually use the agent's start_time decision
         start_time = getattr(action, "start_time", 0) or 0
-        start_time = max(0, min(23, int(start_time)))
-        end_time = start_time + 1
-
+        start_time = max(0, min(23 - task.duration, int(start_time)))  # Ensure valid time
+        end_time = start_time + task.duration  # Use actual task duration
+    
+        # 🔥 FIX: Check for conflicts with existing schedule
+        conflict = False
+        for scheduled_task in self.schedule:
+            if not (end_time <= scheduled_task["start"] or 
+                    start_time >= scheduled_task["end"]):
+                conflict = True
+                break
+    
         self.schedule.append({
             "task_id": task.id,
             "name": task.name,
             "start": start_time,
             "end": end_time,
-            "priority": task.priority
+            "priority": task.priority,
+            "duration": task.duration
         })
-
+    
         self.tasks = [t for t in self.tasks if t.id != task.id]
-
-        # 🔥 FINAL SAFE REWARD (STRICT 0–1, GRADER SAFE)
-        reward = (
-            task.score * 0.6 +
-            (task.priority / 10) * 0.3 +
-            0.1
-        )
-
+    
+        # Safe reward (will be overridden by grader anyway)
+        reward = 0.7 if not conflict else 0.3
         reward = max(0.01, min(0.99, reward))
         self.done = done
-
+    
         obs = Hackathon2Observation(
-            message=f"Step {step_num} processed",
+            message=f"Task {task.name} scheduled at {start_time}-{end_time}, conflict: {conflict}",
             tasks=self.tasks,
-            conflicts=[],
+            conflicts=["overlap detected"] if conflict else [],
             reward=reward,
             done=done,
             scheduled=self.schedule
         )
-
+    
         return self._format_step(obs, reward, done)
 
     # -----------------------------
