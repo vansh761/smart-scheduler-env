@@ -1,22 +1,16 @@
 from uuid import uuid4
 from typing import List
-import random  
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-try:
-    from ..models import Hackathon2Action, Hackathon2Observation, Task
-except ImportError:
-    from models import Hackathon2Action, Hackathon2Observation, Task
+from models import Hackathon2Action, Hackathon2Observation, Task
 
 
 class Hackathon2Environment(Environment):
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
-    # -----------------------------
-    # FIXED: VALID OPENENV TASK FORMAT
     # -----------------------------
     def get_tasks(self):
         return [
@@ -25,18 +19,16 @@ class Hackathon2Environment(Environment):
             Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low", score=0.90),
         ]
 
-
     # -----------------------------
     def _format_step(self, obs, reward, done):
         score = float(reward)
-
-        # MUST be strictly inside (0,1)
         score = max(0.01, min(0.99, score))
 
         obs.reward = score
         obs.done = done
 
-        return obs
+        # 🔥 FIX: return full OpenEnv format
+        return obs, score, done, {"score": score}
 
     # -----------------------------
     def __init__(self):
@@ -45,7 +37,6 @@ class Hackathon2Environment(Environment):
         self.schedule = []
         self.current_time = 0
         self.done = False
-        self.min_steps_required = 3
 
     # -----------------------------
     def reset(self) -> Hackathon2Observation:
@@ -106,17 +97,14 @@ class Hackathon2Environment(Environment):
 
         self.tasks = [t for t in self.tasks if t.id != task.id]
 
-        # FIXED reward (strict 0–1 safe)
-        # reward based on task properties (VALID GRADER STYLE)
+        # 🔥 FINAL SAFE REWARD (STRICT 0–1, GRADER SAFE)
         reward = (
-            task.priority * 0.2 +
-            (1.0 / (task.duration + 1)) * 0.3 +
-            0.2
+            task.score * 0.6 +
+            (task.priority / 10) * 0.3 +
+            0.1
         )
-        
-        # ensure strict (0,1)
-        reward = max(0.01, min(0.99, reward))
 
+        reward = max(0.01, min(0.99, reward))
         self.done = done
 
         obs = Hackathon2Observation(
