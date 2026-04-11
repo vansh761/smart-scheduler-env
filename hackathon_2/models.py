@@ -7,14 +7,12 @@ class Task(BaseModel):
     id: int
     name: str
     priority: int
-    start: Optional[int] = None
-    end: Optional[int] = None
-
-    # 🔥 REQUIRED FOR GRADER SYSTEM
     duration: int = 1
-    deadline: int = 24
+    deadline: int = 10
     energy: str = "medium"
-    depends_on: Optional[int] = None
+
+    # ✅ REQUIRED FOR GRADER VALIDATION
+    score: float = 0.5
 
 # -------- ACTION MODEL -------- #
 class Hackathon2Action(Action):
