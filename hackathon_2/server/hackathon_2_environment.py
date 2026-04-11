@@ -17,21 +17,9 @@ class Hackathon2Environment(Environment):
 
     def get_tasks(self):
         return [
-            {
-                "id": 1,
-                "name": "easy",
-                "grader": {"type": "reward"}
-            },
-            {
-                "id": 2,
-                "name": "medium",
-                "grader": {"type": "reward"}
-            },
-            {
-                "id": 3,
-                "name": "hard",
-                "grader": {"type": "reward"}
-            }
+            {"id": 1, "name": "easy"},
+            {"id": 2, "name": "medium"},
+            {"id": 3, "name": "hard"}
         ]
     
     def _format_step(self, obs, reward, done):
