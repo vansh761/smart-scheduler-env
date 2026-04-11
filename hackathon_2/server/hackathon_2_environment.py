@@ -20,26 +20,11 @@ class Hackathon2Environment(Environment):
     # -----------------------------
     def get_tasks(self):
         return [
-            Task(id=1, name="easy", priority=1),
-            Task(id=2, name="medium", priority=2),
-            Task(id=3, name="hard", priority=3),
+            Task(id=1, name="Study", priority=3, duration=2, deadline=10, energy="high"),
+            Task(id=2, name="Workout", priority=1, duration=1, deadline=8, energy="medium"),
+            Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low"),
         ]
 
-    # -----------------------------
-    # KEEP (but NOT used by validator)
-    # -----------------------------
-    def get_task_scores(self):
-        return [
-            {"task_id": 1, "score": 0.33},
-            {"task_id": 2, "score": 0.66},
-            {"task_id": 3, "score": 0.90}
-        ]
-
-    def get_grader_results(self):
-        return {
-            "tasks": self.get_tasks(),
-            "scores": self.get_task_scores()
-        }
 
     # -----------------------------
     def _format_step(self, obs, reward, done):
@@ -126,14 +111,15 @@ class Hackathon2Environment(Environment):
         self.tasks = [t for t in self.tasks if t.id != task.id]
 
         # FIXED reward (strict 0–1 safe)
-        if step_num == 1:
-            reward = 0.33
-        elif step_num == 2:
-            reward = 0.66
-        else:
-            reward = 0.90
-
-        reward = max(0.01, min(0.99, float(reward)))
+        # reward based on task properties (VALID GRADER STYLE)
+        reward = (
+            task.priority * 0.2 +
+            (1.0 / (task.duration + 1)) * 0.3 +
+            0.2
+        )
+        
+        # ensure strict (0,1)
+        reward = max(0.01, min(0.99, reward))
 
         self.done = done
 
