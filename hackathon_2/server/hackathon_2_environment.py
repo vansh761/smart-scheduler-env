@@ -15,6 +15,17 @@ class Hackathon2Environment(Environment):
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
+    def _format_step(self, obs, reward, done):
+        score = reward / 50
+        score = max(0.01, min(0.99, score))
+    
+        obs.reward = score
+        obs.done = done
+    
+        info = {"score": score}
+    
+        return obs, score, done, info
+    
     def __init__(self):
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.tasks: List[Task] = []
@@ -52,7 +63,7 @@ class Hackathon2Environment(Environment):
             Task(id=4, name="Meeting", priority=1, start=None, end=None, duration=1, deadline=12, energy="medium", depends_on=None),
         ]
 
-        return Hackathon2Observation(
+        obs = Hackathon2Observation(
             message="Environment reset. Schedule tasks.",
             tasks=self.tasks,
             conflicts=[],
@@ -65,6 +76,7 @@ class Hackathon2Environment(Environment):
                 "priority": s["priority"]
             } for s in self.schedule]
         )
+        return self._format_step(obs,10,False)
 
     def step(self, action):
         reward = 0
@@ -83,7 +95,7 @@ class Hackathon2Environment(Environment):
         if action_type == "delete":
             self.schedule = [s for s in self.schedule if s["task_id"] != action.task_id]
 
-            return Hackathon2Observation(
+            obs = Hackathon2Observation(
                 message=f"Task {action.task_id} deleted",
                 tasks=self.tasks,
                 conflicts=[],
@@ -91,6 +103,7 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
+            return self._format_step(obs,10,False)
 
         if action_type == "move":
             for s in self.schedule:
@@ -108,7 +121,7 @@ class Hackathon2Environment(Environment):
                         "priority": s["priority"]
                     })
 
-                    return Hackathon2Observation(
+                    obs = Hackathon2Observation(
                         message=f"Task {action.task_id} moved",
                         tasks=self.tasks,
                         conflicts=[],
@@ -116,11 +129,12 @@ class Hackathon2Environment(Environment):
                         done=False,
                         scheduled=self.schedule
                     )
+                    return self._format_step(obs,10,False)
 
         if action_type == "delete":
             self.schedule = [s for s in self.schedule if s["task_id"] != action.task_id]
 
-            return Hackathon2Observation(
+            obs = Hackathon2Observation(
                 message="Task deleted",
                 tasks=self.tasks,
                 conflicts=[],
@@ -128,6 +142,7 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
+            return self._format_step(obs,10,False)
 
         if action_type == "move":
             existing = next((s for s in self.schedule if s["task_id"] == action.task_id), None)
@@ -140,7 +155,7 @@ class Hackathon2Environment(Environment):
                 existing["priority"] = getattr(action, "priority", existing["priority"])
                 existing["name"] = getattr(action, "name", existing.get("name", "Task"))
 
-                return Hackathon2Observation(
+                obs = Hackathon2Observation(
                     message="Task moved successfully",
                     tasks=self.tasks,
                     conflicts=[],
@@ -148,11 +163,12 @@ class Hackathon2Environment(Environment):
                     done=False,
                     scheduled=self.schedule
                 )
+                return self._format_step(obs,10,False)
 
         if getattr(action, "task_id", None) == -1:
             action = self.auto_schedule()
             if action is None:
-                return Hackathon2Observation(
+                obs = Hackathon2Observation(
                     message="No valid actions left.",
                     tasks=self.tasks,
                     conflicts=["No valid actions left."],
@@ -160,10 +176,11 @@ class Hackathon2Environment(Environment):
                     done=False,
                     scheduled=self.schedule
                 )
+                return self._format_step(obs,10,False)
 
         task = next((t for t in self.tasks if t.id == action.task_id), None)
         if not task:
-            return Hackathon2Observation(
+            obs = Hackathon2Observation(
                 message="Invalid task",
                 tasks=self.tasks,
                 conflicts=["Invalid task"],
@@ -171,9 +188,10 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
+            return self._format_step(obs,10,False)
 
         if any(s["task_id"] == action.task_id for s in self.schedule):
-            return Hackathon2Observation(
+            obs Hackathon2Observation(
                 message="Task already completed",
                 tasks=self.tasks,
                 conflicts=["Task already completed"],
@@ -181,6 +199,7 @@ class Hackathon2Environment(Environment):
                 done=False,
                 scheduled=self.schedule
             )
+            return self._format_step(obs,10,False)
 
         duration = getattr(task, "duration", 1)
         deadline = getattr(task, "deadline", 24)
@@ -196,7 +215,7 @@ class Hackathon2Environment(Environment):
         if depends_on is not None:
             dep_task = next((s for s in self.schedule if s["task_id"] == depends_on), None)
             if not dep_task:
-                return Hackathon2Observation(
+                obs = Hackathon2Observation(
                     message="Dependency not met",
                     tasks=self.tasks,
                     conflicts=[f"Task {task.id} depends on task {depends_on}"],
@@ -204,11 +223,12 @@ class Hackathon2Environment(Environment):
                     done=False,
                     scheduled=self.schedule
                 )
+                return self._format_step(obs,10,False)
 
         for s in self.schedule:
             s_end = s["end"]  # FIXED
             if not (end_time <= s["start"] or start_time >= s_end):
-                return Hackathon2Observation(
+                obs = Hackathon2Observation(
                     message="Time overlap",
                     tasks=self.tasks,
                     conflicts=["Time overlap"],
@@ -216,6 +236,7 @@ class Hackathon2Environment(Environment):
                     done=False,
                     scheduled=self.schedule
                 )
+                return self._format_step(obs,10,False)
 
         reward += 10 if end_time <= deadline else -min(10, end_time - deadline)
         reward += priority * 5
@@ -267,12 +288,13 @@ class Hackathon2Environment(Environment):
         return obs, score, done, info
 
     def get_observation(self):
-        return Hackathon2Observation(
+        obs = Hackathon2Observation(
             message="Current state",
             tasks=self.tasks,
             conflicts=[],
             scheduled=self.schedule
         )
+        return self._format_step(obs,10,False)
 
     @property
     def state(self):
