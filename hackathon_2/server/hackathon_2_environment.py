@@ -20,9 +20,33 @@ class Hackathon2Environment(Environment):
     # -----------------------------
     def get_tasks(self):
         return [
-            Task(id=1, name="Study", priority=3, duration=2, deadline=10, energy="high"),
-            Task(id=2, name="Workout", priority=1, duration=1, deadline=8, energy="medium"),
-            Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low"),
+            Task(
+                id=1,
+                name="Study",
+                priority=3,
+                duration=2,
+                deadline=10,
+                energy="high",
+                score=0.3
+            ),
+            Task(
+                id=2,
+                name="Workout",
+                priority=1,
+                duration=1,
+                deadline=8,
+                energy="medium",
+                score=0.5
+            ),
+            Task(
+                id=3,
+                name="Project",
+                priority=2,
+                duration=3,
+                deadline=15,
+                energy="low",
+                score=0.9
+            ),
         ]
 
 
@@ -55,9 +79,33 @@ class Hackathon2Environment(Environment):
         self.current_time = 0
 
         self.tasks = [
-            Task(id=1, name="Study", priority=3, duration=2, deadline=10, energy="high"),
-            Task(id=2, name="Workout", priority=1, duration=1, deadline=8, energy="medium"),
-            Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low"),
+            Task(
+                id=1,
+                name="Study",
+                priority=3,
+                duration=2,
+                deadline=10,
+                energy="high",
+                score=0.3
+            ),
+            Task(
+                id=2,
+                name="Workout",
+                priority=1,
+                duration=1,
+                deadline=8,
+                energy="medium",
+                score=0.5
+            ),
+            Task(
+                id=3,
+                name="Project",
+                priority=2,
+                duration=3,
+                deadline=15,
+                energy="low",
+                score=0.9
+            ),
         ]
 
         return Hackathon2Observation(
