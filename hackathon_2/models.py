@@ -4,11 +4,17 @@ from typing import List, Optional, Literal
 
 # -------- TASK MODEL -------- #
 class Task(BaseModel):
-    id: int = Field(..., description="Unique task ID", example=4)
-    name: str = Field(..., description="Task name", example="Meeting")
-    priority: int = Field(..., description="Task priority (1 = high, 3 = low)", example=1)
-    start: Optional[int] = Field(None, description="Start time (hour of the day)", example=None)
-    energy: str = Field("medium", description="Energy level required", example="medium")
+    id: int
+    name: str
+    priority: int
+    start: Optional[int] = None
+    end: Optional[int] = None
+
+    # 🔥 REQUIRED FOR GRADER SYSTEM
+    duration: int = 1
+    deadline: int = 24
+    energy: str = "medium"
+    depends_on: Optional[int] = None
 
 # -------- ACTION MODEL -------- #
 class Hackathon2Action(Action):
@@ -17,7 +23,12 @@ class Hackathon2Action(Action):
     start_time: Optional[int] = Field(None, description="Start time for the task", example=9)
     priority: Optional[int] = Field(None, description="Task priority", example=1)
     energy: Optional[str] = Field("medium", description="Energy level required", example="medium")
-
+    
+    action_type: Literal["schedule", "move", "delete", "auto"] = Field(...,
+        description="Choose action type: schedule / move / delete / auto"
+    )
+    
+    
 # -------- OBSERVATION MODEL -------- #
 class Hackathon2Observation(Observation):
     message: str = Field(default="", description="Environment message", example="Environment reset. Schedule tasks.")
