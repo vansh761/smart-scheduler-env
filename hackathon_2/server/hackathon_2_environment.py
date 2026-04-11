@@ -49,14 +49,12 @@ class Hackathon2Environment(Environment):
                 duration=random.randint(1,3),
                 deadline=random.randint(5,15),
                 energy=random.choice(["low","medium","high"]),
-                depends_on=random.choice([None] + [t.id for t in self.tasks] if self.tasks else [None])
+                depends_on=random.choice([None])
             )
             for i in range(3)
         ]
 
-        self.tasks.extend(dynamic_tasks)
-
-        self.tasks = [
+        self.tasks = dynamic_tasks + [
             Task(id=1, name="Study", priority=3, start=None, end=None, duration=2, deadline=10, energy="high", depends_on=None),
             Task(id=2, name="Workout", priority=1, start=None, end=None, duration=1, deadline=8, energy="medium", depends_on=None),
             Task(id=3, name="Project", priority=2, start=None, end=None, duration=3, deadline=15, energy="low", depends_on=None),
