@@ -37,7 +37,7 @@ class Hackathon2Environment(Environment):
     def _format_step(self, obs, reward, done):
         score = float(reward)
     
-        # STRICT validator-safe clamp
+        # MUST be strictly inside (0,1)
         score = max(0.01, min(0.99, score))
     
         obs.reward = score
@@ -61,11 +61,11 @@ class Hackathon2Environment(Environment):
         self.current_time = 0
 
         self.tasks = [
-            Task(id=1, name="Study", priority=3, start=None, energy="high"),
-            Task(id=2, name="Workout", priority=1, start=None, energy="medium"),
-            Task(id=3, name="Project", priority=2, start=None, energy="low"),
-            Task(id=4, name="Meeting", priority=1, start=None, energy="medium"),
-        ]
+            self.tasks = [
+                Task(id=1, name="Study", priority=3, duration=2, deadline=10, energy="high"),
+                Task(id=2, name="Workout", priority=1, duration=1, deadline=8, energy="medium"),
+                Task(id=3, name="Project", priority=2, duration=3, deadline=15, energy="low"),
+            ]
 
         return Hackathon2Observation(
             message="Environment reset. Schedule tasks.",
