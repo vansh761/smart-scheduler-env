@@ -191,7 +191,7 @@ class Hackathon2Environment(Environment):
             return self._format_step(obs,10,False)
 
         if any(s["task_id"] == action.task_id for s in self.schedule):
-            obs Hackathon2Observation(
+            obs = Hackathon2Observation(
                 message="Task already completed",
                 tasks=self.tasks,
                 conflicts=["Task already completed"],
@@ -285,7 +285,7 @@ class Hackathon2Environment(Environment):
 
         info = {"score": score}
 
-        return obs, score, done, info
+        return self._format_step(obs, reward, done)
 
     def get_observation(self):
         obs = Hackathon2Observation(
