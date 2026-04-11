@@ -17,35 +17,11 @@ class Hackathon2Environment(Environment):
 
     def get_tasks(self):
         return [
-            {
-                "id": "easy",
-                "name": "easy",
-                "grader": {
-                    "type": "numeric",
-                    "min": 0.01,
-                    "max": 0.99
-                }
-            },
-            {
-                "id": "medium",
-                "name": "medium",
-                "grader": {
-                    "type": "numeric",
-                    "min": 0.01,
-                    "max": 0.99
-                }
-            },
-            {
-                "id": "hard",
-                "name": "hard",
-                "grader": {
-                    "type": "numeric",
-                    "min": 0.01,
-                    "max": 0.99
-                }
-            }
+            Task(id=1, name="easy", priority=1),
+            Task(id=2, name="medium", priority=2),
+            Task(id=3, name="hard", priority=3),
         ]
-
+        
     def get_task_scores(self):
         return [
             {
