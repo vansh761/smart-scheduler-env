@@ -15,7 +15,8 @@ tasks:
     difficulty: easy
     description: Sort tasks by priority with no scheduling conflicts.
     max_steps: 3
-    score_range: [0.0, 1.0]
+    # Scores must be strictly between 0 and 1 for validation
+    score_range: [0.01, 0.99]
     grader:
       type: python
       entrypoint: grader.grade_easy
@@ -25,7 +26,8 @@ tasks:
     difficulty: medium
     description: Resolve scheduling conflicts while preserving task importance.
     max_steps: 3
-    score_range: [0.0, 1.0]
+    # Scores must be strictly between 0 and 1 for validation
+    score_range: [0.01, 0.99]
     grader:
       type: python
       entrypoint: grader.grade_medium
@@ -35,7 +37,8 @@ tasks:
     difficulty: hard
     description: Optimize a full schedule under multiple constraints with partial credit.
     max_steps: 3
-    score_range: [0.0, 1.0]
+    # Scores must be strictly between 0 and 1 for validation
+    score_range: [0.01, 0.99]
     grader:
       type: python
       entrypoint: grader.grade_hard
