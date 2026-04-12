@@ -116,11 +116,10 @@ No explanation.
                 continue
 
             action = Hackathon2Action(
-                action_type="schedule",
-                task_id=task["task_id"],
-                start=start,
-                end=start + task["duration"]
-            )
+            action_type="schedule",
+            task_id=task["task_id"],
+            start_time=start
+        )
 
             try:
                 result = env.step(action)
