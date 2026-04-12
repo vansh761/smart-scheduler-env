@@ -9,7 +9,9 @@ class Task(BaseModel):
     duration: int = 1
     deadline: int = 10
     energy: str = "medium"
-    score: float = Field(..., gt=0.0, lt=1.0)  # Keep this validation
+    score: float = Field(..., gt=0.0, lt=1.0)
+    start: Optional[int] = None
+    end: Optional[int] = None
 
 class Hackathon2Action(Action):
     task_id: int = Field(..., description="Task ID to act on", example=4)
