@@ -1,38 +1,63 @@
 spec_version: 1
-
 name: smart_schedule_env
-description: AI environment for real-world task scheduling, conflict resolution, and optimization
+version: "0.1.0"
+description: >
+  AI environment for real-world task scheduling, conflict resolution, and optimization.
 
 type: space
 runtime: fastapi
-
 app: server.app:app
 port: 8000
 
 tasks:
-  - id: easy
-    name: easy
-    description: Sort tasks by priority
+  - name: easy
+    id: easy
+    difficulty: easy
+    description: Sort tasks by priority with no scheduling conflicts.
+    max_steps: 3
+    score_range: [0.0, 1.0]
     grader:
       type: python
       entrypoint: grader.grade_easy
-      min_score: 0.02
-      max_score: 0.98
 
-  - id: medium
-    name: medium
-    description: Resolve scheduling conflicts
+  - name: medium
+    id: medium
+    difficulty: medium
+    description: Resolve scheduling conflicts while preserving task importance.
+    max_steps: 3
+    score_range: [0.0, 1.0]
     grader:
       type: python
       entrypoint: grader.grade_medium
-      min_score: 0.02
-      max_score: 0.98
 
-  - id: hard
-    name: hard
-    description: Optimize full schedule with constraints
+  - name: hard
+    id: hard
+    difficulty: hard
+    description: Optimize a full schedule under multiple constraints with partial credit.
+    max_steps: 3
+    score_range: [0.0, 1.0]
     grader:
       type: python
       entrypoint: grader.grade_hard
-      min_score: 0.02
-      max_score: 0.98
+
+observation_space:
+  type: Hackathon2Observation
+  fields:
+    message: string
+    tasks: list
+    conflicts: list
+    scheduled: list
+    reward: float
+    done: bool
+
+action_space:
+  type: Hackathon2Action
+  fields:
+    task_id: int
+    start_time: int
+    action_type: string
+
+endpoints:
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
