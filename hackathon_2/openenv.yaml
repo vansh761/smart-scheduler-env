@@ -6,7 +6,7 @@ description: >
 
 type: space
 runtime: fastapi
-app: server.app:app
+app: hackathon_2.server.app:app
 port: 8000
 
 tasks:
@@ -19,7 +19,7 @@ tasks:
     score_range: [0.01, 0.99]
     grader:
       type: python
-      entrypoint: grader.grade_easy
+      entrypoint: hackathon_2.grader.grade_easy
 
   - name: medium
     id: medium
@@ -30,7 +30,7 @@ tasks:
     score_range: [0.01, 0.99]
     grader:
       type: python
-      entrypoint: grader.grade_medium
+      entrypoint: hackathon_2.grader.grade_medium
 
   - name: hard
     id: hard
@@ -41,7 +41,7 @@ tasks:
     score_range: [0.01, 0.99]
     grader:
       type: python
-      entrypoint: grader.grade_hard
+      entrypoint: hackathon_2.grader.grade_hard
 
 observation_space:
   type: Hackathon2Observation
